@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CountryCard } from '@/components/CountryCard';
 import { Country, getCountriesWithLeagues } from '@/api/countries';
 import { useNotification } from '@/context/NotificationContext';
+import { Button } from '@/components/ui/button';
 import { Loader2, Trophy, Target, Users } from 'lucide-react';
 
 const Home = () => {
@@ -30,6 +31,10 @@ const Home = () => {
     navigate(`/leagues/${encodeURIComponent(countryName)}`);
   };
 
+  const handleStartPredicting = () => {
+    navigate('/select');
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
@@ -48,6 +53,15 @@ const Home = () => {
             Predict match results, compete with friends in tournaments, and climb the leaderboards. 
             Test your football knowledge across leagues worldwide.
           </p>
+
+          <div className="flex gap-4 justify-center mt-6">
+            <Button size="lg" onClick={handleStartPredicting}>
+              Start Predicting
+            </Button>
+            <Button size="lg" variant="outline" onClick={() => navigate('/tournaments')}>
+              View Tournaments
+            </Button>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
             <div className="p-6 bg-card border border-border rounded-lg">

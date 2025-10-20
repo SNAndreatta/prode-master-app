@@ -9,6 +9,9 @@ import { NotificationContainer } from "@/components/Notification";
 import { Header } from "@/components/Header";
 import Home from "./pages/Home";
 import LeaguePage from "./pages/League";
+import SelectPage from "./pages/Select";
+import LeaderboardPage from "./pages/Leaderboard";
+import TournamentsPage from "./pages/Tournaments";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,7 +27,10 @@ const App = () => (
             <Header />
             <Routes>
               <Route path="/" element={<Home />} />
+              <Route path="/select" element={<SelectPage />} />
               <Route path="/leagues/:country" element={<LeaguePage />} />
+              <Route path="/leaderboard/:leagueId" element={<LeaderboardPage />} />
+              <Route path="/tournaments" element={<TournamentsPage />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
