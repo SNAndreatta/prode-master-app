@@ -27,12 +27,25 @@ export const getFixtures = async (leagueId: number, roundName: string): Promise<
   const response = await fetch(
     `${API_BASE}/fixtures?league_id=${leagueId}&round_name=${encodeURIComponent(roundName)}`
   );
-  
+
   if (!response.ok) {
     throw new Error('Failed to fetch fixtures');
   }
 
-  return response.json();
+  const data = await response.json();
+  console.log('Fixtures API response:', data);
+
+  // Handle both array and object-wrapped responses
+  if (Array.isArray(data)) {
+    return data;
+  }
+
+  if (Array.isArray(data.fixtures)) {
+    return data.fixtures;
+  }
+
+  console.warn('Unexpected fixtures API response format:', data);
+  return [];
 };
 
 export type PredictionRequest = {
@@ -41,9 +54,11 @@ export type PredictionRequest = {
   away_goals: number;
 };
 
-export const submitPrediction = async (data: PredictionRequest): Promise<{ success: boolean }> => {
+export const submitPrediction = async (
+  data: PredictionRequest
+): Promise<{ success: boolean }> => {
   const token = getToken();
-  
+
   const response = await fetch(`${API_BASE}/predictions`, {
     method: 'POST',
     headers: {
@@ -54,8 +69,14 @@ export const submitPrediction = async (data: PredictionRequest): Promise<{ succe
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Failed to submit prediction');
+    let message = 'Failed to submit prediction';
+    try {
+      const error = await response.json();
+      if (error.detail) message = error.detail;
+    } catch {
+      // ignore JSON parse errors
+    }
+    throw new Error(message);
   }
 
   return response.json();

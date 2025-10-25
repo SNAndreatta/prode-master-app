@@ -14,7 +14,7 @@ interface LoginModalProps {
 }
 
 export const LoginModal = ({ open, onClose }: LoginModalProps) => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { login: authLogin } = useAuth();
@@ -23,19 +23,19 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!username || !password) {
+    if (!email || !password) {
       addNotification('Please fill all fields', 'error');
       return;
     }
 
     setLoading(true);
     try {
-      const response = await login({ username, password });
+      const response = await login({ email, password });
       saveToken(response.access_token);
       authLogin(response.access_token);
       addNotification('Login successful!', 'success');
       onClose();
-      setUsername('');
+      setEmail('');
       setPassword('');
     } catch (error) {
       addNotification(error instanceof Error ? error.message : 'Login failed', 'error');
@@ -52,13 +52,13 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div className="space-y-2">
-            <Label htmlFor="username">Username</Label>
+            <Label htmlFor="email">Email</Label>
             <Input
-              id="username"
+              id="email"
               type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Enter your username"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter your email"
               disabled={loading}
             />
           </div>
