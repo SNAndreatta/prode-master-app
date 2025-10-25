@@ -423,12 +423,15 @@ const TournamentsPage = () => {
                         </div>
                         <div className="flex flex-col gap-2">
                           {canEdit(tournament) && (
-                            <Link to={`/tournaments/${tournament.id}/manage`} className="flex-1">
-                              <Button variant="secondary" className="w-full">
-                                <Settings className="w-4 h-4 mr-2" />
-                                Manage
-                              </Button>
-                            </Link>
+                            <Button 
+                              variant="secondary" 
+                              className="w-full"
+                              onClick={() => startEditing(tournament)}
+                              disabled={submitting}
+                            >
+                              <Settings className="w-4 h-4 mr-2" />
+                              Manage
+                            </Button>
                           )}
                           <div className="flex gap-2">
                             <Link to={`/tournaments/${tournament.id}`} className="flex-1">
