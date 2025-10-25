@@ -8,7 +8,8 @@ import { useNotification } from '@/context/NotificationContext';
 import { useAuth } from '@/auth/authContext';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Send } from 'lucide-react';
+import { LoadingButton } from '@/components/LoadingButton';
 
 const LeaguePage = () => {
   const { country } = useParams<{ country: string }>();
@@ -21,6 +22,8 @@ const LeaguePage = () => {
   const [fixtures, setFixtures] = useState<Fixture[]>([]);
   const [selectedRound, setSelectedRound] = useState<string>('');
   const [rounds, setRounds] = useState<string[]>([]);
+  const [predictions, setPredictions] = useState<Map<number, { home: number; away: number }>>(new Map());
+  const [submittingAll, setSubmittingAll] = useState(false);
   const [loadingLeagues, setLoadingLeagues] = useState(true);
   const [loadingFixtures, setLoadingFixtures] = useState(false);
 
@@ -62,6 +65,19 @@ const LeaguePage = () => {
       try {
         const data = await getFixtures(selectedLeague.id, selectedRound);
         setFixtures(data);
+        
+        // Initialize predictions
+        const newPredictions = new Map<number, { home: number; away: number }>();
+        data.forEach(fixture => {
+          const isFinished = ['FT', 'AET', 'PEN', 'Finished', 'Match Finished', 'Match Finished After Extra Time', 'Match Finished After Penalty Shootout'].includes(fixture.status);
+          if (!isFinished) {
+            newPredictions.set(fixture.id, {
+              home: fixture.prediction?.home_goals ?? 0,
+              away: fixture.prediction?.away_goals ?? 0
+            });
+          }
+        });
+        setPredictions(newPredictions);
       } catch (error) {
         addNotification('Failed to load fixtures', 'error');
       } finally {
@@ -72,19 +88,39 @@ const LeaguePage = () => {
     fetchFixtures();
   }, [selectedLeague, selectedRound]);
 
-  const handlePredictionSubmit = async (fixtureId: number, homeGoals: number, awayGoals: number) => {
+  const handleSubmitAllPredictions = async () => {
+    if (!isAuthenticated || predictions.size === 0) return;
+    
+    setSubmittingAll(true);
     try {
-      await submitPrediction({ fixture_id: fixtureId, home_goals: homeGoals, away_goals: awayGoals });
-      addNotification('Prediction submitted successfully!', 'success');
+      const predictionPromises = Array.from(predictions.entries()).map(([matchId, goals]) =>
+        submitPrediction({ match_id: matchId, goals_home: goals.home, goals_away: goals.away })
+      );
       
-      // Refresh fixtures to get updated prediction
+      await Promise.all(predictionPromises);
+      addNotification('All predictions submitted successfully!', 'success');
+      
       if (selectedLeague && selectedRound) {
         const data = await getFixtures(selectedLeague.id, selectedRound);
         setFixtures(data);
       }
     } catch (error) {
-      addNotification(error instanceof Error ? error.message : 'Failed to submit prediction', 'error');
+      addNotification(error instanceof Error ? error.message : 'Failed to submit predictions', 'error');
+    } finally {
+      setSubmittingAll(false);
     }
+  };
+
+  const updatePrediction = (fixtureId: number, team: 'home' | 'away', goals: number) => {
+    setPredictions(prev => {
+      const newPredictions = new Map(prev);
+      const current = newPredictions.get(fixtureId) || { home: 0, away: 0 };
+      newPredictions.set(fixtureId, {
+        ...current,
+        [team]: goals
+      });
+      return newPredictions;
+    });
   };
 
   return (
@@ -156,16 +192,40 @@ const LeaguePage = () => {
                 <Loader2 className="w-10 h-10 animate-spin text-primary" />
               </div>
             ) : fixtures.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {fixtures.map((fixture) => (
-                  <FixtureCard
-                    key={fixture.id}
-                    fixture={fixture}
-                    onSubmitPrediction={handlePredictionSubmit}
-                    isAuthenticated={isAuthenticated}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {fixtures.map((fixture) => {
+                    const isFinished = ['FT', 'AET', 'PEN', 'Finished', 'Match Finished', 'Match Finished After Extra Time', 'Match Finished After Penalty Shootout'].includes(fixture.status);
+                    const prediction = predictions.get(fixture.id) || { home: 0, away: 0 };
+                    
+                    return (
+                      <FixtureCard
+                        key={fixture.id}
+                        fixture={fixture}
+                        homeGoals={prediction.home}
+                        awayGoals={prediction.away}
+                        onHomeGoalsChange={(goals) => updatePrediction(fixture.id, 'home', goals)}
+                        onAwayGoalsChange={(goals) => updatePrediction(fixture.id, 'away', goals)}
+                        isAuthenticated={isAuthenticated}
+                      />
+                    );
+                  })}
+                </div>
+                
+                {isAuthenticated && predictions.size > 0 && (
+                  <div className="flex justify-center mt-8">
+                    <LoadingButton 
+                      onClick={handleSubmitAllPredictions} 
+                      loading={submittingAll}
+                      size="lg"
+                      className="min-w-[300px]"
+                    >
+                      <Send className="w-5 h-5 mr-2" />
+                      Submit All Predictions ({predictions.size} matches)
+                    </LoadingButton>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="text-center py-20">
                 <p className="text-muted-foreground">No fixtures found for this round</p>

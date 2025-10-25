@@ -1,43 +1,37 @@
-import { useState } from 'react';
 import { Fixture } from '@/api/fixtures';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Minus, Send } from 'lucide-react';
+import { Plus, Minus } from 'lucide-react';
 import { Shield } from 'lucide-react';
-import { LoadingButton } from './LoadingButton';
 import { Badge } from '@/components/ui/badge';
 
 interface FixtureCardProps {
   fixture: Fixture;
-  onSubmitPrediction: (fixtureId: number, homeGoals: number, awayGoals: number) => Promise<void>;
+  homeGoals: number;
+  awayGoals: number;
+  onHomeGoalsChange: (goals: number) => void;
+  onAwayGoalsChange: (goals: number) => void;
   isAuthenticated: boolean;
 }
 
-export const FixtureCard = ({ fixture, onSubmitPrediction, isAuthenticated }: FixtureCardProps) => {
-  const [homeGoals, setHomeGoals] = useState(fixture.prediction?.home_goals ?? 0);
-  const [awayGoals, setAwayGoals] = useState(fixture.prediction?.away_goals ?? 0);
-  const [loading, setLoading] = useState(false);
+export const FixtureCard = ({ 
+  fixture, 
+  homeGoals, 
+  awayGoals, 
+  onHomeGoalsChange, 
+  onAwayGoalsChange, 
+  isAuthenticated 
+}: FixtureCardProps) => {
 
   const isFinished = ['FT', 'AET', 'PEN', 'Finished', 'Match Finished', 'Match Finished After Extra Time', 'Match Finished After Penalty Shootout'].includes(fixture.status);
   const hasResult = fixture.home_goals !== null && fixture.away_goals !== null;
   const prediction = fixture.prediction ?? null;
 
-  const handleSubmit = async () => {
-    if (!isAuthenticated) return;
-    
-    setLoading(true);
-    try {
-      await onSubmitPrediction(fixture.id, homeGoals, awayGoals);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const adjustGoals = (team: 'home' | 'away', delta: number) => {
     if (team === 'home') {
-      setHomeGoals(Math.max(0, homeGoals + delta));
+      onHomeGoalsChange(Math.max(0, homeGoals + delta));
     } else {
-      setAwayGoals(Math.max(0, awayGoals + delta));
+      onAwayGoalsChange(Math.max(0, awayGoals + delta));
     }
   };
 
@@ -128,15 +122,6 @@ export const FixtureCard = ({ fixture, onSubmitPrediction, isAuthenticated }: Fi
           </div>
         </div>
 
-        {/* Submit Button */}
-        {!isFinished && isAuthenticated && (
-          <div className="flex justify-center">
-            <LoadingButton onClick={handleSubmit} loading={loading} size="default" className="w-full">
-              <Send className="w-4 h-4 mr-2" />
-              Submit Prediction
-            </LoadingButton>
-          </div>
-        )}
       </CardContent>
     </Card>
   );

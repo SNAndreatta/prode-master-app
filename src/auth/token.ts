@@ -26,7 +26,15 @@ export const decodeToken = (token: string): DecodedToken | null => {
         .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
         .join('')
     );
-    return JSON.parse(jsonPayload);
+    const parsed = JSON.parse(jsonPayload);
+    console.log('Decoded token payload:', parsed);
+    
+    // Map common JWT field names to our DecodedToken interface
+    return {
+      user_id: parsed.user_id || parsed.sub,
+      username: parsed.username || parsed.name || parsed.user_name || 'User',
+      exp: parsed.exp
+    };
   } catch (error) {
     console.error('Token decode error:', error);
     return null;
