@@ -1,10 +1,34 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Trophy, Users, Plus, Eye } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '@/auth/authContext';
+import { getMyTournaments, Tournament } from '@/api/tournaments';
 
 const TournamentsPage = () => {
   const [activeTab, setActiveTab] = useState<'join' | 'view' | 'create'>('join');
+  const { isAuthenticated } = useAuth();
+  const [myTournaments, setMyTournaments] = useState<Tournament[]>([]);
+  const [loadingTournaments, setLoadingTournaments] = useState(false);
+
+  useEffect(() => {
+    const fetchMy = async () => {
+      if (activeTab !== 'view') return;
+      if (!isAuthenticated) return;
+      setLoadingTournaments(true);
+      try {
+        const data = await getMyTournaments();
+        setMyTournaments(data);
+      } catch (err) {
+        console.error('Failed to load my tournaments', err);
+      } finally {
+        setLoadingTournaments(false);
+      }
+    };
+
+    fetchMy();
+  }, [activeTab, isAuthenticated]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -95,12 +119,50 @@ const TournamentsPage = () => {
               )}
 
               {activeTab === 'view' && (
-                <div className="text-center py-12">
-                  <Trophy className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground mb-4">You haven't joined any tournaments yet</p>
-                  <Button variant="outline" onClick={() => setActiveTab('join')}>
-                    Join Your First Tournament
-                  </Button>
+                <div className="py-4">
+                  {!isAuthenticated && (
+                    <div className="text-center py-12">
+                      <Trophy className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground mb-4">Login to view your tournaments</p>
+                      <Button variant="outline" onClick={() => setActiveTab('join')}>
+                        Join a Tournament
+                      </Button>
+                    </div>
+                  )}
+
+                  {isAuthenticated && (
+                    <div>
+                      {loadingTournaments && <p className="text-sm text-muted-foreground">Loading...</p>}
+                      {!loadingTournaments && myTournaments.length === 0 && (
+                        <div className="text-center py-12">
+                          <Trophy className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                          <p className="text-muted-foreground mb-4">You haven't joined any tournaments yet</p>
+                          <Button variant="outline" onClick={() => setActiveTab('join')}>
+                            Join Your First Tournament
+                          </Button>
+                        </div>
+                      )}
+
+                      {!loadingTournaments && myTournaments.length > 0 && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {myTournaments.map((t) => (
+                            <Card key={t.id} className="p-4">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <h3 className="font-semibold">{t.name}</h3>
+                                  <p className="text-sm text-muted-foreground">{t.description}</p>
+                                </div>
+                                <div className="flex flex-col items-end gap-2">
+                                  <Link to={`/tournaments/${t.id}`}>View</Link>
+                                  <span className="text-xs text-muted-foreground">{t.is_public ? 'Public' : 'Private'}</span>
+                                </div>
+                              </div>
+                            </Card>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 

@@ -12,6 +12,7 @@ import LeaguePage from "./pages/League";
 import SelectPage from "./pages/Select";
 import LeaderboardPage from "./pages/Leaderboard";
 import TournamentsPage from "./pages/Tournaments";
+import TournamentDetail from "./pages/TournamentDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +32,7 @@ const App = () => (
               <Route path="/leagues/:country" element={<LeaguePage />} />
               <Route path="/leaderboard/:leagueId" element={<LeaderboardPage />} />
               <Route path="/tournaments" element={<TournamentsPage />} />
+              <Route path="/tournaments/:id" element={<TournamentDetail />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
