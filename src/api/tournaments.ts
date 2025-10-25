@@ -11,6 +11,14 @@ export type Tournament = {
   created_by?: number | null;
 };
 
+export type TournamentLeaderboardEntry = {
+  rank: number;
+  username: string;
+  points: number;
+  correct_predictions?: number;
+  total_predictions?: number;
+};
+
 export const getMyTournaments = async (): Promise<Tournament[]> => {
   const token = getToken();
   const response = await fetch(`${API_BASE}/tournaments/my`, {
@@ -41,6 +49,23 @@ export const getTournamentById = async (id: number): Promise<Tournament> => {
   if (!response.ok) {
     const text = await response.text();
     throw new Error(text || 'Failed to fetch tournament');
+  }
+
+  return response.json();
+};
+
+export const getTournamentLeaderboard = async (id: number): Promise<TournamentLeaderboardEntry[]> => {
+  const token = getToken();
+  const response = await fetch(`${API_BASE}/tournaments/${id}/leaderboard`, {
+    headers: token
+      ? {
+          Authorization: `Bearer ${token}`,
+        }
+      : {},
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch tournament leaderboard');
   }
 
   return response.json();
