@@ -1,35 +1,9 @@
-import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CountryCard } from '@/components/CountryCard';
-import { Country, getCountriesWithLeagues } from '@/api/countries';
-import { useNotification } from '@/context/NotificationContext';
 import { Button } from '@/components/ui/button';
-import { Loader2, Trophy, Target, Users } from 'lucide-react';
+import { Trophy, Target, Users } from 'lucide-react';
 
 const Home = () => {
-  const [countries, setCountries] = useState<Country[]>([]);
-  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const { addNotification } = useNotification();
-
-  useEffect(() => {
-    const fetchCountries = async () => {
-      try {
-        const data = await getCountriesWithLeagues();
-        setCountries(data);
-      } catch (error) {
-        addNotification('Failed to load countries', 'error');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCountries();
-  }, []);
-
-  const handleCountryClick = (countryName: string) => {
-    navigate(`/leagues/${encodeURIComponent(countryName)}`);
-  };
 
   const handleStartPredicting = () => {
     navigate('/select');
@@ -87,29 +61,6 @@ const Home = () => {
             </div>
           </div>
         </div>
-      </section>
-
-      {/* Countries Section */}
-      <section className="container mx-auto px-4 py-12">
-        <h2 className="text-3xl font-bold mb-8 text-center">
-          Select Your Country
-        </h2>
-
-        {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <Loader2 className="w-10 h-10 animate-spin text-primary" />
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {countries.map((country) => (
-              <CountryCard
-                key={country.name}
-                country={country}
-                onClick={() => handleCountryClick(country.name)}
-              />
-            ))}
-          </div>
-        )}
       </section>
     </div>
   );

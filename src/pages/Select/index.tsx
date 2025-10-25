@@ -204,19 +204,11 @@ const SelectPage = () => {
         {/* Step 3: Select Round and View Fixtures */}
         {selectedLeague && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                {selectedLeague.logo && (
-                  <img src={selectedLeague.logo} alt={selectedLeague.name} className="w-12 h-12 object-contain" />
-                )}
-                <h2 className="text-2xl font-bold">{selectedLeague.name}</h2>
-              </div>
-              <Button 
-                variant="outline" 
-                onClick={() => navigate(`/leaderboard/${selectedLeague.id}`)}
-              >
-                View Leaderboard
-              </Button>
+            <div className="flex items-center gap-4">
+              {selectedLeague.logo && (
+                <img src={selectedLeague.logo} alt={selectedLeague.name} className="w-12 h-12 object-contain" />
+              )}
+              <h2 className="text-2xl font-bold">{selectedLeague.name}</h2>
             </div>
 
             <div className="flex items-center gap-4">

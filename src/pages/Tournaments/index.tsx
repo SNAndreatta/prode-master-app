@@ -195,9 +195,6 @@ const TournamentsPage = () => {
                     </select>
                   </div>
                   <Button className="w-full">Create Tournament</Button>
-                  <p className="text-sm text-muted-foreground text-center">
-                    You'll receive a shareable code after creating the tournament
-                  </p>
                 </div>
               )}
             </CardContent>

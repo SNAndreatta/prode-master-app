@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Fixture } from '@/api/fixtures';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Plus, Minus, Send } from 'lucide-react';
 import { Shield } from 'lucide-react';
 import { LoadingButton } from './LoadingButton';
@@ -19,7 +18,7 @@ export const FixtureCard = ({ fixture, onSubmitPrediction, isAuthenticated }: Fi
   const [awayGoals, setAwayGoals] = useState(fixture.prediction?.away_goals ?? 0);
   const [loading, setLoading] = useState(false);
 
-  const isFinished = fixture.status === 'FT' || fixture.status === 'Finished';
+  const isFinished = ['FT', 'AET', 'PEN', 'Finished', 'Match Finished', 'Match Finished After Extra Time', 'Match Finished After Penalty Shootout'].includes(fixture.status);
   const hasResult = fixture.home_goals !== null && fixture.away_goals !== null;
   const prediction = fixture.prediction ?? null;
 
@@ -68,52 +67,50 @@ export const FixtureCard = ({ fixture, onSubmitPrediction, isAuthenticated }: Fi
           {/* Score/Prediction */}
           <div className="flex flex-col items-center gap-3">
             {hasResult && (
-              <div className="text-3xl font-bold text-success">
+              <div className="text-3xl font-bold text-primary">
                 {fixture.home_goals} - {fixture.away_goals}
               </div>
             )}
-            {isFinished && (
-              <div className="text-sm text-muted-foreground text-center">
-                <div>
-                  Your prediction: {prediction ? `${prediction.home_goals} - ${prediction.away_goals}` : '-'}
+            {isFinished && prediction && (
+              <div className="text-sm text-muted-foreground text-center space-y-1">
+                <div className="flex items-center justify-center gap-2">
+                  <span>Your prediction:</span>
+                  <span className="font-semibold text-foreground">{prediction.home_goals} - {prediction.away_goals}</span>
                 </div>
-                <div>
-                  Points: {prediction?.points ?? 0}
+                <div className="flex items-center justify-center gap-2">
+                  <span>Points earned:</span>
+                  <Badge variant="default" className="bg-success">{prediction.points ?? 0}</Badge>
                 </div>
               </div>
             )}
             {!isFinished && isAuthenticated && (
-              <div className="flex items-center gap-2">
-                <div className="flex flex-col items-center gap-1">
-                  <Button size="sm" variant="outline" onClick={() => adjustGoals('home', 1)}>
-                    <Plus className="w-3 h-3" />
-                  </Button>
-                  <Input
-                    type="number"
-                    value={homeGoals}
-                    onChange={(e) => setHomeGoals(Math.max(0, parseInt(e.target.value) || 0))}
-                    className="w-16 text-center"
-                    min="0"
-                  />
-                  <Button size="sm" variant="outline" onClick={() => adjustGoals('home', -1)}>
-                    <Minus className="w-3 h-3" />
-                  </Button>
+              <div className="flex items-center gap-3">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="text-2xl font-bold tabular-nums bg-muted rounded-lg px-4 py-2 min-w-[60px] text-center">
+                    {homeGoals}
+                  </div>
+                  <div className="flex gap-1">
+                    <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => adjustGoals('home', -1)}>
+                      <Minus className="w-4 h-4" />
+                    </Button>
+                    <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => adjustGoals('home', 1)}>
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
-                <span className="text-xl font-bold">-</span>
-                <div className="flex flex-col items-center gap-1">
-                  <Button size="sm" variant="outline" onClick={() => adjustGoals('away', 1)}>
-                    <Plus className="w-3 h-3" />
-                  </Button>
-                  <Input
-                    type="number"
-                    value={awayGoals}
-                    onChange={(e) => setAwayGoals(Math.max(0, parseInt(e.target.value) || 0))}
-                    className="w-16 text-center"
-                    min="0"
-                  />
-                  <Button size="sm" variant="outline" onClick={() => adjustGoals('away', -1)}>
-                    <Minus className="w-3 h-3" />
-                  </Button>
+                <span className="text-2xl font-bold text-muted-foreground">-</span>
+                <div className="flex flex-col items-center gap-2">
+                  <div className="text-2xl font-bold tabular-nums bg-muted rounded-lg px-4 py-2 min-w-[60px] text-center">
+                    {awayGoals}
+                  </div>
+                  <div className="flex gap-1">
+                    <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => adjustGoals('away', -1)}>
+                      <Minus className="w-4 h-4" />
+                    </Button>
+                    <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => adjustGoals('away', 1)}>
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             )}
@@ -131,20 +128,15 @@ export const FixtureCard = ({ fixture, onSubmitPrediction, isAuthenticated }: Fi
           </div>
         </div>
 
-        {/* Submit or Points */}
-        <div className="flex justify-center">
-          {isFinished && fixture.prediction?.points !== undefined && (
-            <Badge className="bg-success text-success-foreground">
-              Points: {fixture.prediction.points}
-            </Badge>
-          )}
-          {!isFinished && isAuthenticated && (
-            <LoadingButton onClick={handleSubmit} loading={loading} size="sm">
+        {/* Submit Button */}
+        {!isFinished && isAuthenticated && (
+          <div className="flex justify-center">
+            <LoadingButton onClick={handleSubmit} loading={loading} size="default" className="w-full">
               <Send className="w-4 h-4 mr-2" />
               Submit Prediction
             </LoadingButton>
-          )}
-        </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
