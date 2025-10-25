@@ -149,11 +149,6 @@ const TournamentDetail = () => {
                         </div>
                         <div className="flex-1">
                           <p className="font-semibold text-lg">{entry.username}</p>
-                          {(entry.correct_predictions !== undefined && entry.total_predictions !== undefined) && (
-                            <p className="text-sm text-muted-foreground">
-                              {entry.correct_predictions}/{entry.total_predictions} correct predictions
-                            </p>
-                          )}
                         </div>
                         <div className="text-right">
                           <p className="text-2xl font-bold text-primary">{entry.points}</p>

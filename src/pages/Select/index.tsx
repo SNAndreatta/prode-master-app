@@ -96,9 +96,9 @@ const SelectPage = () => {
     fetchFixtures();
   }, [selectedLeague, selectedRound]);
 
-  const handlePredictionSubmit = async (fixtureId: number, homeGoals: number, awayGoals: number) => {
+  const handlePredictionSubmit = async (matchId: number, homeGoals: number, awayGoals: number) => {
     try {
-      await submitPrediction({ fixture_id: fixtureId, home_goals: homeGoals, away_goals: awayGoals });
+      await submitPrediction({ match_id: matchId, goals_home: homeGoals, goals_away: awayGoals });
       addNotification('Prediction submitted successfully!', 'success');
       
       if (selectedLeague && selectedRound) {

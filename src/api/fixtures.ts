@@ -49,9 +49,9 @@ export const getFixtures = async (leagueId: number, roundName: string): Promise<
 };
 
 export type PredictionRequest = {
-  fixture_id: number;
-  home_goals: number;
-  away_goals: number;
+  match_id: number;
+  goals_home: number;
+  goals_away: number;
 };
 
 export const submitPrediction = async (

@@ -96,9 +96,6 @@ const LeaderboardPage = () => {
                     </div>
                     <div className="flex-1">
                       <p className="font-semibold text-lg">{entry.username}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {entry.correctPredictions}/{entry.totalPredictions} correct predictions
-                      </p>
                     </div>
                     <div className="text-right">
                       <p className="text-2xl font-bold text-primary">{entry.points}</p>
