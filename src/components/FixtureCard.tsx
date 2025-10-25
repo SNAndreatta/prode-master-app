@@ -21,6 +21,7 @@ export const FixtureCard = ({ fixture, onSubmitPrediction, isAuthenticated }: Fi
 
   const isFinished = fixture.status === 'FT' || fixture.status === 'Finished';
   const hasResult = fixture.home_goals !== null && fixture.away_goals !== null;
+  const prediction = fixture.prediction ?? null;
 
   const handleSubmit = async () => {
     if (!isAuthenticated) return;
@@ -69,6 +70,16 @@ export const FixtureCard = ({ fixture, onSubmitPrediction, isAuthenticated }: Fi
             {hasResult && (
               <div className="text-3xl font-bold text-success">
                 {fixture.home_goals} - {fixture.away_goals}
+              </div>
+            )}
+            {isFinished && (
+              <div className="text-sm text-muted-foreground text-center">
+                <div>
+                  Your prediction: {prediction ? `${prediction.home_goals} - ${prediction.away_goals}` : '-'}
+                </div>
+                <div>
+                  Points: {prediction?.points ?? 0}
+                </div>
               </div>
             )}
             {!isFinished && isAuthenticated && (
