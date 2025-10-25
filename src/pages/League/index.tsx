@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { LeagueCard } from '@/components/LeagueCard';
 import { FixtureCard } from '@/components/FixtureCard';
 import { League, getLeaguesByCountry } from '@/api/leagues';
-import { Fixture, getFixtures, submitPrediction } from '@/api/fixtures';
+import { Fixture, getFixtures, submitPrediction, getPredictions, PredictionWithMatch } from '@/api/fixtures';
 import { useNotification } from '@/context/NotificationContext';
 import { useAuth } from '@/auth/authContext';
 import { Button } from '@/components/ui/button';
@@ -63,17 +63,28 @@ const LeaguePage = () => {
     const fetchFixtures = async () => {
       setLoadingFixtures(true);
       try {
-        const data = await getFixtures(selectedLeague.id, selectedRound);
-        setFixtures(data);
+        const [fixturesData, predictionsData] = await Promise.all([
+          getFixtures(selectedLeague.id, selectedRound),
+          isAuthenticated ? getPredictions({ league_id: selectedLeague.id }).catch(() => [] as PredictionWithMatch[]) : Promise.resolve([] as PredictionWithMatch[])
+        ]);
+        
+        setFixtures(fixturesData);
+        
+        // Create a map of predictions by match_id
+        const predictionsMap = new Map<number, PredictionWithMatch>();
+        predictionsData.forEach(pred => {
+          predictionsMap.set(pred.match_id, pred);
+        });
         
         // Initialize predictions
         const newPredictions = new Map<number, { home: number; away: number }>();
-        data.forEach(fixture => {
+        fixturesData.forEach(fixture => {
           const isFinished = ['FT', 'AET', 'PEN', 'Finished', 'Match Finished', 'Match Finished After Extra Time', 'Match Finished After Penalty Shootout'].includes(fixture.status);
           if (!isFinished) {
+            const existingPrediction = predictionsMap.get(fixture.id);
             newPredictions.set(fixture.id, {
-              home: fixture.prediction?.home_goals ?? 0,
-              away: fixture.prediction?.away_goals ?? 0
+              home: existingPrediction?.goals_home ?? 0,
+              away: existingPrediction?.goals_away ?? 0
             });
           }
         });
@@ -86,7 +97,7 @@ const LeaguePage = () => {
     };
 
     fetchFixtures();
-  }, [selectedLeague, selectedRound]);
+  }, [selectedLeague, selectedRound, isAuthenticated]);
 
   const handleSubmitAllPredictions = async () => {
     if (!isAuthenticated || predictions.size === 0) return;

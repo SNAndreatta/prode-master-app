@@ -21,7 +21,7 @@ import {
   TournamentCreate,
   TournamentUpdate 
 } from '@/api/tournaments';
-import { getLeagues, League } from '@/api/leagues';
+import { getLeagues, getLeagueById, League } from '@/api/leagues';
 import { z } from 'zod';
 import { LoadingButton } from '@/components/LoadingButton';
 
@@ -48,6 +48,7 @@ const TournamentsPage = () => {
   const [publicTournaments, setPublicTournaments] = useState<Tournament[]>([]);
   const [myTournaments, setMyTournaments] = useState<Tournament[]>([]);
   const [leagues, setLeagues] = useState<League[]>([]);
+  const [leagueNames, setLeagueNames] = useState<Map<number, string>>(new Map());
   const [loadingPublic, setLoadingPublic] = useState(false);
   const [loadingMy, setLoadingMy] = useState(false);
   const [loadingLeagues, setLoadingLeagues] = useState(false);
@@ -92,6 +93,21 @@ const TournamentsPage = () => {
     try {
       const data = await getPublicTournaments();
       setPublicTournaments(data);
+      
+      // Fetch league names for all tournaments
+      const uniqueLeagueIds = [...new Set(data.map(t => t.league_id))];
+      const leagueMap = new Map<number, string>();
+      await Promise.all(
+        uniqueLeagueIds.map(async (leagueId) => {
+          try {
+            const league = await getLeagueById(leagueId);
+            leagueMap.set(leagueId, league.name);
+          } catch (error) {
+            console.error(`Failed to fetch league ${leagueId}`, error);
+          }
+        })
+      );
+      setLeagueNames(prev => new Map([...prev, ...leagueMap]));
     } catch (error) {
       addNotification(error instanceof Error ? error.message : 'Failed to load tournaments', 'error');
     } finally {
@@ -311,41 +327,56 @@ const TournamentsPage = () => {
                 </div>
               ) : publicTournaments.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {publicTournaments.map((tournament) => (
-                    <Card key={tournament.id} className="hover:border-primary transition-colors">
-                      <CardHeader>
-                        <CardTitle className="text-lg">{tournament.name}</CardTitle>
-                        {tournament.description && (
-                          <CardDescription className="line-clamp-2">{tournament.description}</CardDescription>
-                        )}
-                      </CardHeader>
-                      <CardContent className="space-y-2">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">Max: {tournament.max_participants}</span>
-                          <span className="text-muted-foreground">{tournament.is_public ? 'Public' : 'Private'}</span>
-                        </div>
-                        <div className="flex gap-2">
-                          <Link to={`/tournaments/${tournament.id}`} className="flex-1">
-                            <Button variant="outline" className="w-full">
-                              <ExternalLink className="w-4 h-4 mr-2" />
-                              View
-                            </Button>
-                          </Link>
-                          {isAuthenticated && (
-                            <LoadingButton
-                              onClick={() => handleJoinTournament(tournament.id)}
-                              loading={submitting}
-                              size="default"
-                              className="flex-1"
-                            >
-                              <Users className="w-4 h-4 mr-2" />
-                              Join
-                            </LoadingButton>
+                  {publicTournaments.map((tournament) => {
+                    const isJoined = myTournaments.some(t => t.id === tournament.id);
+                    
+                    return (
+                      <Card key={tournament.id} className="hover:border-primary transition-colors">
+                        <CardHeader>
+                          <CardTitle className="text-lg">{tournament.name}</CardTitle>
+                          {tournament.description && (
+                            <CardDescription className="line-clamp-2">{tournament.description}</CardDescription>
                           )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">League:</span>
+                            <span className="font-medium text-foreground">{leagueNames.get(tournament.league_id) || 'Loading...'}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Max: {tournament.max_participants}</span>
+                            <span className="text-muted-foreground">{tournament.is_public ? 'Public' : 'Private'}</span>
+                          </div>
+                          <div className="flex gap-2">
+                            {isJoined ? (
+                              <Link to={`/tournaments/${tournament.id}`} className="flex-1">
+                                <Button variant="outline" className="w-full">
+                                  <ExternalLink className="w-4 h-4 mr-2" />
+                                  View
+                                </Button>
+                              </Link>
+                            ) : (
+                              <Button variant="outline" className="flex-1" disabled>
+                                <ExternalLink className="w-4 h-4 mr-2" />
+                                View (Join First)
+                              </Button>
+                            )}
+                            {isAuthenticated && !isJoined && (
+                              <LoadingButton
+                                onClick={() => handleJoinTournament(tournament.id)}
+                                loading={submitting}
+                                size="default"
+                                className="flex-1"
+                              >
+                                <Users className="w-4 h-4 mr-2" />
+                                Join
+                              </LoadingButton>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               ) : (
                 <Card>
@@ -399,6 +430,10 @@ const TournamentsPage = () => {
                         )}
                       </CardHeader>
                       <CardContent className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">League:</span>
+                          <span className="font-medium text-foreground">{leagueNames.get(tournament.league_id) || 'Loading...'}</span>
+                        </div>
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-muted-foreground">Max: {tournament.max_participants}</span>
                           <span className="text-muted-foreground">{tournament.is_public ? 'Public' : 'Private'}</span>

@@ -54,6 +54,39 @@ export type PredictionRequest = {
   goals_away: number;
 };
 
+export type PredictionWithMatch = {
+  id: number;
+  match_id: number;
+  goals_home: number;
+  goals_away: number;
+  points?: number | null;
+};
+
+export const getPredictions = async (params: {
+  round_id?: number;
+  league_id?: number;
+  match_id?: number;
+}): Promise<PredictionWithMatch[]> => {
+  const token = getToken();
+  const queryParams = new URLSearchParams();
+  
+  if (params.round_id) queryParams.append('round_id', params.round_id.toString());
+  if (params.league_id) queryParams.append('league_id', params.league_id.toString());
+  if (params.match_id) queryParams.append('match_id', params.match_id.toString());
+
+  const response = await fetch(`${API_BASE}/predictions?${queryParams.toString()}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch predictions');
+  }
+
+  return response.json();
+};
+
 export const submitPrediction = async (
   data: PredictionRequest
 ): Promise<{ success: boolean }> => {

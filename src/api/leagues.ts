@@ -17,6 +17,16 @@ export const getLeagues = async (): Promise<League[]> => {
   return response.json();
 };
 
+export const getLeagueById = async (id: number): Promise<League> => {
+  const response = await fetch(`${API_BASE}/leagues/${id}`);
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch league');
+  }
+
+  return response.json();
+};
+
 export const getLeaguesByCountry = async (countryName: string): Promise<League[]> => {
     const response = await fetch(`${API_BASE}/leagues?country_name=${encodeURIComponent(countryName)}`);
 
