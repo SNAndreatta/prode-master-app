@@ -15,6 +15,8 @@ import {
   createTournament, 
   updateTournament,
   joinTournament,
+  leaveTournament,
+  deleteTournament,
   Tournament, 
   TournamentCreate,
   TournamentUpdate 
@@ -52,7 +54,7 @@ const TournamentsPage = () => {
   const [submitting, setSubmitting] = useState(false);
 
   // Join form
-  const [joinCode, setJoinCode] = useState('');
+  const [selectedTournamentToJoin, setSelectedTournamentToJoin] = useState<number | null>(null);
 
   // Create form
   const [createForm, setCreateForm] = useState<TournamentCreate>({
@@ -121,27 +123,50 @@ const TournamentsPage = () => {
     }
   };
 
-  const handleJoinTournament = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleJoinTournament = async (tournamentId: number) => {
     if (!isAuthenticated) {
       addNotification('Please login to join tournaments', 'error');
       return;
     }
 
-    if (!joinCode.trim()) {
-      addNotification('Please enter a tournament code', 'error');
-      return;
+    setSubmitting(true);
+    try {
+      await joinTournament(tournamentId);
+      addNotification('Successfully joined tournament!', 'success');
+      setActiveTab('my');
+      fetchMyTournaments();
+    } catch (error) {
+      addNotification(error instanceof Error ? error.message : 'Failed to join tournament', 'error');
+    } finally {
+      setSubmitting(false);
     }
+  };
+
+  const handleLeaveTournament = async (tournamentId: number) => {
+    if (!confirm('Are you sure you want to leave this tournament?')) return;
 
     setSubmitting(true);
     try {
-      await joinTournament(joinCode.trim());
-      addNotification('Successfully joined tournament!', 'success');
-      setJoinCode('');
-      setActiveTab('my');
+      await leaveTournament(tournamentId);
+      addNotification('Left tournament successfully', 'success');
+      fetchMyTournaments();
     } catch (error) {
-      addNotification(error instanceof Error ? error.message : 'Failed to join tournament', 'error');
+      addNotification(error instanceof Error ? error.message : 'Failed to leave tournament', 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteTournament = async (tournamentId: number) => {
+    if (!confirm('Are you sure you want to delete this tournament? This action cannot be undone.')) return;
+
+    setSubmitting(true);
+    try {
+      await deleteTournament(tournamentId);
+      addNotification('Tournament deleted successfully', 'success');
+      fetchMyTournaments();
+    } catch (error) {
+      addNotification(error instanceof Error ? error.message : 'Failed to delete tournament', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -294,17 +319,30 @@ const TournamentsPage = () => {
                           <CardDescription className="line-clamp-2">{tournament.description}</CardDescription>
                         )}
                       </CardHeader>
-                      <CardContent>
-                        <div className="flex items-center justify-between text-sm mb-3">
+                      <CardContent className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
                           <span className="text-muted-foreground">Max: {tournament.max_participants}</span>
                           <span className="text-muted-foreground">{tournament.is_public ? 'Public' : 'Private'}</span>
                         </div>
-                        <Link to={`/tournaments/${tournament.id}`}>
-                          <Button variant="outline" className="w-full">
-                            <ExternalLink className="w-4 h-4 mr-2" />
-                            View Details
-                          </Button>
-                        </Link>
+                        <div className="flex gap-2">
+                          <Link to={`/tournaments/${tournament.id}`} className="flex-1">
+                            <Button variant="outline" className="w-full">
+                              <ExternalLink className="w-4 h-4 mr-2" />
+                              View
+                            </Button>
+                          </Link>
+                          {isAuthenticated && (
+                            <LoadingButton
+                              onClick={() => handleJoinTournament(tournament.id)}
+                              loading={submitting}
+                              size="default"
+                              className="flex-1"
+                            >
+                              <Users className="w-4 h-4 mr-2" />
+                              Join
+                            </LoadingButton>
+                          )}
+                        </div>
                       </CardContent>
                     </Card>
                   ))}
@@ -340,34 +378,60 @@ const TournamentsPage = () => {
                   {myTournaments.map((tournament) => (
                     <Card key={tournament.id} className="hover:border-primary transition-colors">
                       <CardHeader>
-                        <div className="flex items-start justify-between">
-                          <CardTitle className="text-lg">{tournament.name}</CardTitle>
-                          {canEdit(tournament) && (
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => startEditing(tournament)}
-                              className="h-8 w-8"
-                            >
-                              <Settings className="w-4 h-4" />
-                            </Button>
-                          )}
+                        <div className="flex items-start justify-between gap-2">
+                          <CardTitle className="text-lg flex-1">{tournament.name}</CardTitle>
+                          <div className="flex gap-1">
+                            {canEdit(tournament) && (
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => startEditing(tournament)}
+                                className="h-8 w-8"
+                                title="Edit tournament"
+                              >
+                                <Settings className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
                         {tournament.description && (
                           <CardDescription className="line-clamp-2">{tournament.description}</CardDescription>
                         )}
                       </CardHeader>
-                      <CardContent>
-                        <div className="flex items-center justify-between text-sm mb-3">
+                      <CardContent className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
                           <span className="text-muted-foreground">Max: {tournament.max_participants}</span>
                           <span className="text-muted-foreground">{tournament.is_public ? 'Public' : 'Private'}</span>
                         </div>
-                        <Link to={`/tournaments/${tournament.id}`}>
-                          <Button variant="outline" className="w-full">
-                            <ExternalLink className="w-4 h-4 mr-2" />
-                            View Leaderboard
-                          </Button>
-                        </Link>
+                        <div className="flex gap-2">
+                          <Link to={`/tournaments/${tournament.id}`} className="flex-1">
+                            <Button variant="outline" className="w-full">
+                              <ExternalLink className="w-4 h-4 mr-2" />
+                              View
+                            </Button>
+                          </Link>
+                          {canEdit(tournament) ? (
+                            <Button
+                              variant="destructive"
+                              size="default"
+                              onClick={() => handleDeleteTournament(tournament.id)}
+                              disabled={submitting}
+                              className="flex-1"
+                            >
+                              Delete
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="default"
+                              onClick={() => handleLeaveTournament(tournament.id)}
+                              disabled={submitting}
+                              className="flex-1"
+                            >
+                              Leave
+                            </Button>
+                          )}
+                        </div>
                       </CardContent>
                     </Card>
                   ))}
@@ -386,36 +450,67 @@ const TournamentsPage = () => {
             </div>
           )}
 
-          {/* Join Tournament */}
+          {/* Join Tournament - Shows public tournaments you haven't joined */}
           {activeTab === 'join' && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Join a Tournament</CardTitle>
-                <CardDescription>Enter a tournament code to join</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleJoinTournament} className="space-y-4">
-                  <div>
-                    <Label htmlFor="code">Tournament Code</Label>
-                    <Input
-                      id="code"
-                      type="text"
-                      placeholder="Enter code (e.g., ABC123)"
-                      value={joinCode}
-                      onChange={(e) => setJoinCode(e.target.value)}
-                      disabled={submitting}
-                      maxLength={20}
-                    />
-                  </div>
-                  <LoadingButton type="submit" loading={submitting} className="w-full">
-                    Join Tournament
-                  </LoadingButton>
-                  <p className="text-sm text-muted-foreground text-center">
-                    Get the tournament code from your friend or group admin
-                  </p>
-                </form>
-              </CardContent>
-            </Card>
+            <div>
+              <h2 className="text-2xl font-bold mb-4">Join a Tournament</h2>
+              <p className="text-muted-foreground mb-6">Browse and join public tournaments</p>
+              {!isAuthenticated ? (
+                <Card>
+                  <CardContent className="py-12 text-center">
+                    <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">Please login to join tournaments</p>
+                  </CardContent>
+                </Card>
+              ) : loadingPublic ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                </div>
+              ) : publicTournaments.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {publicTournaments.map((tournament) => (
+                    <Card key={tournament.id} className="hover:border-primary transition-colors">
+                      <CardHeader>
+                        <CardTitle className="text-lg">{tournament.name}</CardTitle>
+                        {tournament.description && (
+                          <CardDescription className="line-clamp-2">{tournament.description}</CardDescription>
+                        )}
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">Max: {tournament.max_participants}</span>
+                          <span className="text-muted-foreground">{tournament.is_public ? 'Public' : 'Private'}</span>
+                        </div>
+                        <div className="flex gap-2">
+                          <Link to={`/tournaments/${tournament.id}`} className="flex-1">
+                            <Button variant="outline" className="w-full">
+                              <ExternalLink className="w-4 h-4 mr-2" />
+                              View
+                            </Button>
+                          </Link>
+                          <LoadingButton
+                            onClick={() => handleJoinTournament(tournament.id)}
+                            loading={submitting}
+                            size="default"
+                            className="flex-1"
+                          >
+                            <Users className="w-4 h-4 mr-2" />
+                            Join
+                          </LoadingButton>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <Card>
+                  <CardContent className="py-12 text-center">
+                    <Trophy className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">No tournaments available to join</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           )}
 
           {/* Create Tournament */}

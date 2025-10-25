@@ -37,6 +37,13 @@ export type TournamentLeaderboardEntry = {
   total_predictions?: number;
 };
 
+export type ParticipantOut = {
+  id: number;
+  username: string;
+  email: string;
+  joined_at: string;
+};
+
 export const getAllTournaments = async (): Promise<Tournament[]> => {
   const response = await fetch(`${API_BASE}/tournaments`);
 
@@ -135,7 +142,7 @@ export const createTournament = async (data: TournamentCreate): Promise<Tourname
 export const updateTournament = async (id: number, data: TournamentUpdate): Promise<Tournament> => {
   const token = getToken();
   const response = await fetch(`${API_BASE}/tournaments/${id}`, {
-    method: 'PUT',
+    method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
@@ -157,15 +164,14 @@ export const updateTournament = async (id: number, data: TournamentUpdate): Prom
   return response.json();
 };
 
-export const joinTournament = async (code: string): Promise<{ success: boolean }> => {
+export const joinTournament = async (tournamentId: number): Promise<{ success: boolean }> => {
   const token = getToken();
-  const response = await fetch(`${API_BASE}/tournaments/join`, {
+  const response = await fetch(`${API_BASE}/tournaments/${tournamentId}/join`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ code }),
   });
 
   if (!response.ok) {
@@ -177,6 +183,69 @@ export const joinTournament = async (code: string): Promise<{ success: boolean }
       // ignore JSON parse errors
     }
     throw new Error(message);
+  }
+
+  return response.json();
+};
+
+export const leaveTournament = async (tournamentId: number): Promise<{ success: boolean }> => {
+  const token = getToken();
+  const response = await fetch(`${API_BASE}/tournaments/${tournamentId}/leave`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    let message = 'Failed to leave tournament';
+    try {
+      const error = await response.json();
+      if (error.detail) message = error.detail;
+    } catch {
+      // ignore JSON parse errors
+    }
+    throw new Error(message);
+  }
+
+  return response.json();
+};
+
+export const deleteTournament = async (tournamentId: number): Promise<{ success: boolean }> => {
+  const token = getToken();
+  const response = await fetch(`${API_BASE}/tournaments/${tournamentId}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    let message = 'Failed to delete tournament';
+    try {
+      const error = await response.json();
+      if (error.detail) message = error.detail;
+    } catch {
+      // ignore JSON parse errors
+    }
+    throw new Error(message);
+  }
+
+  return response.json();
+};
+
+export const getTournamentParticipants = async (tournamentId: number): Promise<ParticipantOut[]> => {
+  const token = getToken();
+  const response = await fetch(`${API_BASE}/tournaments/${tournamentId}/participants`, {
+    headers: token
+      ? {
+          Authorization: `Bearer ${token}`,
+        }
+      : {},
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch tournament participants');
   }
 
   return response.json();
