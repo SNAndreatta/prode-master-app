@@ -5,10 +5,28 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 export type Tournament = {
   id: number;
   name: string;
-  code?: string | null;
   description?: string | null;
   is_public: boolean;
-  created_by?: number | null;
+  creator_id: number;
+  league_id: number;
+  max_participants: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type TournamentCreate = {
+  name: string;
+  description?: string;
+  league_id: number;
+  is_public: boolean;
+  max_participants: number;
+};
+
+export type TournamentUpdate = {
+  name?: string;
+  description?: string;
+  is_public?: boolean;
+  max_participants?: number;
 };
 
 export type TournamentLeaderboardEntry = {
@@ -19,14 +37,32 @@ export type TournamentLeaderboardEntry = {
   total_predictions?: number;
 };
 
+export const getAllTournaments = async (): Promise<Tournament[]> => {
+  const response = await fetch(`${API_BASE}/tournaments`);
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch tournaments');
+  }
+
+  return response.json();
+};
+
+export const getPublicTournaments = async (): Promise<Tournament[]> => {
+  const response = await fetch(`${API_BASE}/tournaments?is_public=true`);
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch public tournaments');
+  }
+
+  return response.json();
+};
+
 export const getMyTournaments = async (): Promise<Tournament[]> => {
   const token = getToken();
   const response = await fetch(`${API_BASE}/tournaments/my`, {
-    headers: token
-      ? {
-          Authorization: `Bearer ${token}`,
-        }
-      : {},
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
   });
 
   if (!response.ok) {
@@ -66,6 +102,81 @@ export const getTournamentLeaderboard = async (id: number): Promise<TournamentLe
 
   if (!response.ok) {
     throw new Error('Failed to fetch tournament leaderboard');
+  }
+
+  return response.json();
+};
+
+export const createTournament = async (data: TournamentCreate): Promise<Tournament> => {
+  const token = getToken();
+  const response = await fetch(`${API_BASE}/tournaments`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    let message = 'Failed to create tournament';
+    try {
+      const error = await response.json();
+      if (error.detail) message = error.detail;
+    } catch {
+      // ignore JSON parse errors
+    }
+    throw new Error(message);
+  }
+
+  return response.json();
+};
+
+export const updateTournament = async (id: number, data: TournamentUpdate): Promise<Tournament> => {
+  const token = getToken();
+  const response = await fetch(`${API_BASE}/tournaments/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    let message = 'Failed to update tournament';
+    try {
+      const error = await response.json();
+      if (error.detail) message = error.detail;
+    } catch {
+      // ignore JSON parse errors
+    }
+    throw new Error(message);
+  }
+
+  return response.json();
+};
+
+export const joinTournament = async (code: string): Promise<{ success: boolean }> => {
+  const token = getToken();
+  const response = await fetch(`${API_BASE}/tournaments/join`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ code }),
+  });
+
+  if (!response.ok) {
+    let message = 'Failed to join tournament';
+    try {
+      const error = await response.json();
+      if (error.detail) message = error.detail;
+    } catch {
+      // ignore JSON parse errors
+    }
+    throw new Error(message);
   }
 
   return response.json();

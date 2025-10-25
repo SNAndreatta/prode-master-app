@@ -7,6 +7,16 @@ export type League = {
     season?: number | null;
 };
 
+export const getLeagues = async (): Promise<League[]> => {
+  const response = await fetch(`${API_BASE}/leagues`);
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch leagues');
+  }
+
+  return response.json();
+};
+
 export const getLeaguesByCountry = async (countryName: string): Promise<League[]> => {
     const response = await fetch(`${API_BASE}/leagues?country_name=${encodeURIComponent(countryName)}`);
 
