@@ -61,19 +61,18 @@ export const FixtureCard = ({
             <div className="text-3xl font-bold text-primary">
               {fixture.home_team_score} - {fixture.away_team_score}
             </div>
-            {isFinished && fixture.prediction && (
+            
               <div className="text-sm text-muted-foreground text-center space-y-1">
                 <div className="flex items-center justify-center gap-2">
                   <span>Your prediction:</span>
-                  <span className="font-semibold text-foreground">{fixture.prediction.goals_home ?? 0} - {fixture.prediction.goals_away ?? 0}</span>
+                  <span className="font-semibold text-foreground">{fixture.prediction?.goals_home ?? 0} - {fixture.prediction?.goals_away ?? 0}</span>
                 </div>
                 <div className="flex items-center justify-center gap-2">
                   <span>Points earned:</span>
-                  <Badge variant="default" className="bg-success">{fixture.prediction.points ?? 0}</Badge>
+                  <Badge variant="default" className="bg-success">{fixture.prediction?.points ?? 0}</Badge>
                 </div>
               </div>
-            )}
-            {!isFinished && isAuthenticated && (
+              {!isFinished && isAuthenticated && (
               <div className="flex items-center gap-3">
                 <div className="flex flex-col items-center gap-2">
                   <div className="text-2xl font-bold tabular-nums bg-muted rounded-lg px-4 py-2 min-w-[60px] text-center">

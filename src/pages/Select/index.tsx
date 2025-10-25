@@ -264,14 +264,14 @@ const SelectPage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {fixtures.map((fixture) => {
                     const isFinished = ['FT', 'AET', 'PEN', 'Finished', 'Match Finished', 'Match Finished After Extra Time', 'Match Finished After Penalty Shootout'].includes(fixture.status);
-                    const prediction = predictions.get(fixture.id) || { home: 0, away: 0 };
+                    const prediction = fixture.prediction;
                     
                     return (
                       <FixtureCard
                         key={fixture.id}
                         fixture={fixture}
-                        homeGoals={prediction.home}
-                        awayGoals={prediction.away}
+                        homeGoals={prediction.goals_away}
+                        awayGoals={prediction.goals_home}
                         onHomeGoalsChange={(goals) => updatePrediction(fixture.id, 'home', goals)}
                         onAwayGoalsChange={(goals) => updatePrediction(fixture.id, 'away', goals)}
                         isAuthenticated={isAuthenticated}

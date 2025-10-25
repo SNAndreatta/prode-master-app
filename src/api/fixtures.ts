@@ -38,7 +38,7 @@ export type Fixture = {
   away_team_score?: number | null;
   home_pens_score?: number | null;
   away_pens_score?: number | null;
-  prediction?: PredictionWithMatch | null; // added prediction here
+  prediction: PredictionWithMatch; // always defined
 };
 
 export const getFixtures = async (leagueId: number, roundName: string, token?: string): Promise<Fixture[]> => {
@@ -47,31 +47,48 @@ export const getFixtures = async (leagueId: number, roundName: string, token?: s
     `${API_BASE}/fixtures?league_id=${leagueId}&round_name=${encodeURIComponent(roundName)}`
   );
   if (!fixtureResp.ok) throw new Error('Failed to fetch fixtures');
+
   const fixtureData = await fixtureResp.json();
+  console.log("Raw fixture data from API:", fixtureData);
+
   const fixtures: Fixture[] = Array.isArray(fixtureData) ? fixtureData : fixtureData.fixtures ?? [];
+  console.log("Parsed fixtures array:", fixtures);
 
-  // If token provided, fetch user predictions
+  // Initialize prediction to avoid undefined in React
+  fixtures.forEach(f => {
+    f.prediction = { match_id: f.id, goals_home: 0, goals_away: 0, id: 0, points: 0 };
+  });
+
+  console.log("Fixtures after initializing predictions:", fixtures);
+
   if (token) {
-    const predResp = await fetch(`${API_BASE}/predictions?league_id=${leagueId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (predResp.ok) {
-      const predictions: PredictionWithMatch[] = await predResp.json();
-      const predictionsMap = new Map(predictions.map(p => [p.match_id, p]));
+    await Promise.all(
+      fixtures.map(async fixture => {
+        try {
+          const predResp = await fetch(`${API_BASE}/predictions?match_id=${fixture.id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (predResp.ok) {
+            const predictions: PredictionWithMatch[] = await predResp.json();
+            console.log(`Predictions for match ${fixture.id}:`, predictions);
 
-      // Merge predictions into fixtures
-      fixtures.forEach(fixture => {
-        fixture.prediction = predictionsMap.get(fixture.id) ?? null;
-      });
-    }
+            if (predictions.length > 0) fixture.prediction = predictions[0];
+          } else {
+            console.warn(`Failed to fetch prediction for match ${fixture.id}: HTTP ${predResp.status}`);
+          }
+        } catch (err) {
+          console.warn(`Failed to fetch prediction for match ${fixture.id}`, err);
+        }
+      })
+    );
   }
+
+  console.log("Final fixtures with merged predictions:", fixtures);
 
   return fixtures;
 };
 
-export const submitPrediction = async (
-  data: PredictionRequest
-): Promise<{ success: boolean }> => {
+export const submitPrediction = async (data: PredictionRequest): Promise<{ success: boolean }> => {
   const token = getToken();
 
   const response = await fetch(`${API_BASE}/predictions`, {
@@ -88,9 +105,7 @@ export const submitPrediction = async (
     try {
       const error = await response.json();
       if (error.detail) message = error.detail;
-    } catch {
-      // ignore JSON parse errors
-    }
+    } catch {}
     throw new Error(message);
   }
 
