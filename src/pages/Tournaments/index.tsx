@@ -71,6 +71,13 @@ const TournamentsPage = () => {
   const [editForm, setEditForm] = useState<TournamentUpdate>({});
 
   useEffect(() => {
+    // Cargar ligas una vez para toda la página
+    if (leagues.length === 0) {
+      fetchLeagues();
+    }
+  }, []);
+
+  useEffect(() => {
     if (activeTab === 'browse') {
       fetchPublicTournaments();
     }
@@ -93,21 +100,6 @@ const TournamentsPage = () => {
     try {
       const data = await getPublicTournaments();
       setPublicTournaments(data);
-      
-      // Fetch league names for all tournaments
-      const uniqueLeagueIds = [...new Set(data.map(t => t.league_id))];
-      const leagueMap = new Map<number, string>();
-      await Promise.all(
-        uniqueLeagueIds.map(async (leagueId) => {
-          try {
-            const league = await getLeagueById(leagueId);
-            leagueMap.set(leagueId, league.name);
-          } catch (error) {
-            console.error(`Failed to fetch league ${leagueId}`, error);
-          }
-        })
-      );
-      setLeagueNames(prev => new Map([...prev, ...leagueMap]));
     } catch (error) {
       addNotification(error instanceof Error ? error.message : 'Failed to load tournaments', 'error');
     } finally {
@@ -132,6 +124,10 @@ const TournamentsPage = () => {
     try {
       const data = await getLeagues();
       setLeagues(data);
+
+      const map = new Map<number, string>();
+      data.forEach((league) => map.set(league.id, league.name));
+      setLeagueNames(map);
     } catch (error) {
       addNotification('Failed to load leagues', 'error');
     } finally {
@@ -257,7 +253,7 @@ const TournamentsPage = () => {
   };
 
   const canEdit = (tournament: Tournament) => {
-    return isAuthenticated && user?.user_id === tournament.creator_id;
+    return user.user_id == tournament.creator_id;
   };
 
   return (
@@ -411,19 +407,6 @@ const TournamentsPage = () => {
                       <CardHeader>
                         <div className="flex items-start justify-between gap-2">
                           <CardTitle className="text-lg flex-1">{tournament.name}</CardTitle>
-                          <div className="flex gap-1">
-                            {canEdit(tournament) && (
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                onClick={() => startEditing(tournament)}
-                                className="h-8 w-8"
-                                title="Edit tournament"
-                              >
-                                <Settings className="w-4 h-4" />
-                              </Button>
-                            )}
-                          </div>
                         </div>
                         {tournament.description && (
                           <CardDescription className="line-clamp-2">{tournament.description}</CardDescription>
@@ -438,34 +421,44 @@ const TournamentsPage = () => {
                           <span className="text-muted-foreground">Max: {tournament.max_participants}</span>
                           <span className="text-muted-foreground">{tournament.is_public ? 'Public' : 'Private'}</span>
                         </div>
-                        <div className="flex gap-2">
-                          <Link to={`/tournaments/${tournament.id}`} className="flex-1">
-                            <Button variant="outline" className="w-full">
-                              <ExternalLink className="w-4 h-4 mr-2" />
-                              View
-                            </Button>
-                          </Link>
-                          {canEdit(tournament) ? (
-                            <Button
-                              variant="destructive"
-                              size="default"
-                              onClick={() => handleDeleteTournament(tournament.id)}
-                              disabled={submitting}
-                              className="flex-1"
-                            >
-                              Delete
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="outline"
-                              size="default"
-                              onClick={() => handleLeaveTournament(tournament.id)}
-                              disabled={submitting}
-                              className="flex-1"
-                            >
-                              Leave
-                            </Button>
+                        <div className="flex flex-col gap-2">
+                          {canEdit(tournament) && (
+                            <Link to={`/tournaments/${tournament.id}/manage`} className="flex-1">
+                              <Button variant="secondary" className="w-full">
+                                <Settings className="w-4 h-4 mr-2" />
+                                Manage
+                              </Button>
+                            </Link>
                           )}
+                          <div className="flex gap-2">
+                            <Link to={`/tournaments/${tournament.id}`} className="flex-1">
+                              <Button variant="outline" className="w-full">
+                                <ExternalLink className="w-4 h-4 mr-2" />
+                                View
+                              </Button>
+                            </Link>
+                            {canEdit(tournament) ? (
+                              <Button
+                                variant="destructive"
+                                size="default"
+                                onClick={() => handleDeleteTournament(tournament.id)}
+                                disabled={submitting}
+                                className="flex-1"
+                              >
+                                Delete
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="default"
+                                onClick={() => handleLeaveTournament(tournament.id)}
+                                disabled={submitting}
+                                className="flex-1"
+                              >
+                                Leave
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
@@ -648,7 +641,7 @@ const TournamentsPage = () => {
 
           {/* Edit Tournament Modal */}
           {editingTournament && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[9999]">
               <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                 <CardHeader>
                   <CardTitle>Edit Tournament</CardTitle>
