@@ -7,11 +7,24 @@ export type Country = {
 };
 
 export const getCountriesWithLeagues = async (): Promise<Country[]> => {
-  const response = await fetch(`${API_BASE}/countries_with_league`);
-  
-  if (!response.ok) {
-    throw new Error('Failed to fetch countries');
-  }
+    const response = await fetch(`${API_BASE}/countries_with_league`);
+    
+    if (!response.ok) {
+        throw new Error('Failed to fetch countries');
+    }
 
-  return response.json();
+    const data = await response.json();
+    console.log('Countries API response:', data);
+
+    if (Array.isArray(data)) {
+        return data;
+    }
+
+    if (Array.isArray(data.countries)) {
+        return data.countries;
+    }
+
+    console.warn('Unexpected countries API response format:', data);
+    return [];
 };
+

@@ -4,7 +4,7 @@ import { CountryCard } from '@/components/CountryCard';
 import { LeagueCard } from '@/components/LeagueCard';
 import { FixtureCard } from '@/components/FixtureCard';
 import { Country, getCountriesWithLeagues } from '@/api/countries';
-import { League, getLeaguesByCountry } from '@/api/leagues';
+import { League, getLeaguesByCountry, getRoundsByLeague } from '@/api/leagues';
 import { Fixture, getFixtures, submitPrediction } from '@/api/fixtures';
 import { useNotification } from '@/context/NotificationContext';
 import { useAuth } from '@/auth/authContext';
@@ -62,13 +62,20 @@ const SelectPage = () => {
     fetchLeagues();
   }, [selectedCountry]);
 
-  // Generate rounds when league is selected
+  // Fetch rounds when league is selected
   useEffect(() => {
     if (!selectedLeague) return;
 
-    const generatedRounds = Array.from({ length: 38 }, (_, i) => `Regular Season - ${i + 1}`);
-    setRounds(generatedRounds);
-    setSelectedRound(generatedRounds[0]);
+    const fetchRounds = async () => {
+      try {
+        const roundNames = await getRoundsByLeague(selectedLeague.id);
+        setRounds(roundNames);
+        setSelectedRound(roundNames[0]); // Select first round by default
+      } catch (error) {
+        addNotification('Failed to load rounds', 'error');
+      }
+    };
+    fetchRounds();
   }, [selectedLeague]);
 
   // Fetch fixtures when round is selected
