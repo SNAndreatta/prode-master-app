@@ -24,8 +24,6 @@ export const FixtureCard = ({
 }: FixtureCardProps) => {
 
   const isFinished = ['FT', 'AET', 'PEN', 'Finished', 'Match Finished', 'Match Finished After Extra Time', 'Match Finished After Penalty Shootout'].includes(fixture.status);
-  const hasResult = fixture.home_goals !== null && fixture.away_goals !== null;
-  const prediction = fixture.prediction ?? null;
 
   const adjustGoals = (team: 'home' | 'away', delta: number) => {
     if (team === 'home') {
@@ -60,20 +58,18 @@ export const FixtureCard = ({
 
           {/* Score/Prediction */}
           <div className="flex flex-col items-center gap-3">
-            {hasResult && (
-              <div className="text-3xl font-bold text-primary">
-                {fixture.home_goals} - {fixture.away_goals}
-              </div>
-            )}
-            {isFinished && prediction && (
+            <div className="text-3xl font-bold text-primary">
+              {fixture.home_team_score} - {fixture.away_team_score}
+            </div>
+            {isFinished && fixture.prediction && (
               <div className="text-sm text-muted-foreground text-center space-y-1">
                 <div className="flex items-center justify-center gap-2">
                   <span>Your prediction:</span>
-                  <span className="font-semibold text-foreground">{prediction.home_goals} - {prediction.away_goals}</span>
+                  <span className="font-semibold text-foreground">{fixture.prediction.goals_home ?? 0} - {fixture.prediction.goals_away ?? 0}</span>
                 </div>
                 <div className="flex items-center justify-center gap-2">
                   <span>Points earned:</span>
-                  <Badge variant="default" className="bg-success">{prediction.points ?? 0}</Badge>
+                  <Badge variant="default" className="bg-success">{fixture.prediction.points ?? 0}</Badge>
                 </div>
               </div>
             )}

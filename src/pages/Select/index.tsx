@@ -5,7 +5,7 @@ import { LeagueCard } from '@/components/LeagueCard';
 import { FixtureCard } from '@/components/FixtureCard';
 import { Country, getCountriesWithLeagues } from '@/api/countries';
 import { League, getLeaguesByCountry, getRoundsByLeague } from '@/api/leagues';
-import { Fixture, getFixtures, submitPrediction, getPredictions, PredictionWithMatch } from '@/api/fixtures';
+import { Fixture, getFixtures, submitPrediction, PredictionWithMatch } from '@/api/fixtures';
 import { useNotification } from '@/context/NotificationContext';
 import { useAuth } from '@/auth/authContext';
 import { Button } from '@/components/ui/button';
@@ -88,32 +88,11 @@ const SelectPage = () => {
     const fetchFixtures = async () => {
       setLoadingFixtures(true);
       try {
-        const [fixturesData, predictionsData] = await Promise.all([
-          getFixtures(selectedLeague.id, selectedRound),
-          isAuthenticated ? getPredictions({ league_id: selectedLeague.id }).catch(() => [] as PredictionWithMatch[]) : Promise.resolve([] as PredictionWithMatch[])
+        const [fixturesData] = await Promise.all([
+          getFixtures(selectedLeague.id, selectedRound)
         ]);
         
         setFixtures(fixturesData);
-        
-        // Create a map of predictions by match_id
-        const predictionsMap = new Map<number, PredictionWithMatch>();
-        predictionsData.forEach(pred => {
-          predictionsMap.set(pred.match_id, pred);
-        });
-        
-        // Initialize predictions with fetched predictions or 0-0
-        const newPredictions = new Map<number, { home: number; away: number }>();
-        fixturesData.forEach(fixture => {
-          const isFinished = ['FT', 'AET', 'PEN', 'Finished', 'Match Finished', 'Match Finished After Extra Time', 'Match Finished After Penalty Shootout'].includes(fixture.status);
-          if (!isFinished) {
-            const existingPrediction = predictionsMap.get(fixture.id);
-            newPredictions.set(fixture.id, {
-              home: existingPrediction?.goals_home ?? 0,
-              away: existingPrediction?.goals_away ?? 0
-            });
-          }
-        });
-        setPredictions(newPredictions);
       } catch (error) {
         addNotification('Failed to load fixtures', 'error');
       } finally {

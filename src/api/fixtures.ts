@@ -2,89 +2,71 @@ import { getToken } from '@/auth/token';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
+export type Country = {
+  name: string;
+  code?: string | null;
+  flag?: string | null;
+};
+
 export type Team = {
   id: number;
   name: string;
   logo?: string | null;
-};
-
-export type Fixture = {
-  id: number;
-  date: string;
-  status: string;
-  home_team: Team;
-  away_team: Team;
-  home_goals?: number | null;
-  away_goals?: number | null;
-  prediction?: {
-    home_goals: number;
-    away_goals: number;
-    points?: number | null;
-  } | null;
-};
-
-export const getFixtures = async (leagueId: number, roundName: string): Promise<Fixture[]> => {
-  const response = await fetch(
-    `${API_BASE}/fixtures?league_id=${leagueId}&round_name=${encodeURIComponent(roundName)}`
-  );
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch fixtures');
-  }
-
-  const data = await response.json();
-  console.log('Fixtures API response:', data);
-
-  // Handle both array and object-wrapped responses
-  if (Array.isArray(data)) {
-    return data;
-  }
-
-  if (Array.isArray(data.fixtures)) {
-    return data.fixtures;
-  }
-
-  console.warn('Unexpected fixtures API response format:', data);
-  return [];
+  country: Country;
 };
 
 export type PredictionRequest = {
   match_id: number;
-  goals_home: number;
-  goals_away: number;
+  goals_home?: number | null;
+  goals_away?: number | null;
 };
 
-export type PredictionWithMatch = {
+export type PredictionWithMatch = PredictionRequest & {
   id: number;
-  match_id: number;
-  goals_home: number;
-  goals_away: number;
   points?: number | null;
 };
 
-export const getPredictions = async (params: {
-  round_id?: number;
-  league_id?: number;
-  match_id?: number;
-}): Promise<PredictionWithMatch[]> => {
-  const token = getToken();
-  const queryParams = new URLSearchParams();
-  
-  if (params.round_id) queryParams.append('round_id', params.round_id.toString());
-  if (params.league_id) queryParams.append('league_id', params.league_id.toString());
-  if (params.match_id) queryParams.append('match_id', params.match_id.toString());
+export type Fixture = {
+  id: number;
+  league: number;
+  date: string;
+  status: string;
+  round?: string;
+  home_team: Team;
+  away_team: Team;
+  home_team_score?: number | null;
+  away_team_score?: number | null;
+  home_pens_score?: number | null;
+  away_pens_score?: number | null;
+  prediction?: PredictionWithMatch | null; // added prediction here
+};
 
-  const response = await fetch(`${API_BASE}/predictions?${queryParams.toString()}`, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
-  });
+export const getFixtures = async (leagueId: number, roundName: string, token?: string): Promise<Fixture[]> => {
+  // Fetch fixtures
+  const fixtureResp = await fetch(
+    `${API_BASE}/fixtures?league_id=${leagueId}&round_name=${encodeURIComponent(roundName)}`
+  );
+  if (!fixtureResp.ok) throw new Error('Failed to fetch fixtures');
+  const fixtureData = await fixtureResp.json();
+  const fixtures: Fixture[] = Array.isArray(fixtureData) ? fixtureData : fixtureData.fixtures ?? [];
 
-  if (!response.ok) {
-    throw new Error('Failed to fetch predictions');
+  // If token provided, fetch user predictions
+  if (token) {
+    const predResp = await fetch(`${API_BASE}/predictions?league_id=${leagueId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (predResp.ok) {
+      const predictions: PredictionWithMatch[] = await predResp.json();
+      const predictionsMap = new Map(predictions.map(p => [p.match_id, p]));
+
+      // Merge predictions into fixtures
+      fixtures.forEach(fixture => {
+        fixture.prediction = predictionsMap.get(fixture.id) ?? null;
+      });
+    }
   }
 
-  return response.json();
+  return fixtures;
 };
 
 export const submitPrediction = async (

@@ -674,18 +674,6 @@ const TournamentsPage = () => {
                         maxLength={500}
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="edit-max">Max Participants</Label>
-                      <Input
-                        id="edit-max"
-                        type="number"
-                        min={2}
-                        max={1000}
-                        value={editForm.max_participants || 100}
-                        onChange={(e) => setEditForm({ ...editForm, max_participants: Number(e.target.value) })}
-                        disabled={submitting}
-                      />
-                    </div>
                     <div className="flex items-center gap-2">
                       <input
                         type="checkbox"
